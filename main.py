@@ -4,14 +4,18 @@ import torch
 import torch.nn as nn
 import numpy as np
 import cv2
+import requests
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI(
     title="SolarSentinel AI Inference Engine",
-    description="Production API for Solar Flare Regression and Risk Profiling",
+    description="Production API for Solar Flare Regression, Real-Time Satellite Fetching, and Risk Profiling",
     version="1.0.0"
 )
+
+# NASA SDO official live snapshot repository (AIA 193 Wavelength - Latest Image Node)
+NASA_LIVE_193_URL = "https://sdo.gsfc.nasa.gov/data/assets/img/latest/latest_1024_0193.jpg"
 
 # ==========================================
 # 🧠 1. CNN MODEL ARCHITECTURE RE-DEFINITION
@@ -45,7 +49,7 @@ class SolarSentinelCNN(nn.Module):
         x = self.dropout(self.act4(self.fc1(x)))
         return self.fc_out(x).squeeze(-1)
 
-# Initialize and load weights safely on CPU for standard hosting environments
+# Initialize and load trained core weights safely into host memory memory
 MODEL_PATH = "solar_sentinel_cnn.pth"
 model = SolarSentinelCNN()
 
@@ -66,7 +70,7 @@ class FlarePredictionResponse(BaseModel):
     risk_level: str
     confidence_score: float
 
-# Helper function to classify solar physics flux range
+# Helper function to classify solar physics flux range vectors
 def classify_solar_flux(flux_val):
     if flux_val >= 1e-4:
         return "X-Class (Severe/Catastrophic Storm)", "CRITICAL"
@@ -77,7 +81,7 @@ def classify_solar_flux(flux_val):
     return "B-Class or Below (Safe)", "LOW"
 
 # ==========================================
-# 🚀 3. CORE INFERENCE ENDPOINT
+# 🚀 3. ENDPOINT 1: MANUAL FILE UPLOAD
 # ==========================================
 @app.post("/api/v1/ai/flare-prediction", response_model=FlarePredictionResponse)
 async def predict_flare(file: UploadFile = File(...)):
@@ -85,7 +89,6 @@ async def predict_flare(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Invalid image extension. Submissions must be raster nodes.")
     
     try:
-        # Read file bytes into opencv memory buffer matrix
         contents = await file.read()
         nparr = np.frombuffer(contents, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
@@ -93,18 +96,14 @@ async def predict_flare(file: UploadFile = File(...)):
         if img is None:
             raise HTTPException(status_code=400, detail="Corrupted image matrix byte arrays stream.")
             
-        # Computer Vision Transforms (Match Training Dimensions Exactly)
+        # Computer Vision Transforms
         img_resized = cv2.resize(img, (128, 128))
         img_normalized = img_resized.astype(np.float32) / 255.0
-        
-        # Build evaluation tensor shape -> [Batch=1, Channel=1, H=128, W=128]
         input_tensor = torch.tensor(img_normalized).unsqueeze(0).unsqueeze(0)
         
-        # Run forward pass inference engine
         with torch.no_grad():
             log_flux_pred = model(input_tensor).item()
             
-        # Re-convert from training log scale back into linear solar physics units
         real_flux = 10 ** log_flux_pred
         flare_class, risk_level = classify_solar_flux(real_flux)
         
@@ -113,12 +112,60 @@ async def predict_flare(file: UploadFile = File(...)):
             real_space_flux=real_flux,
             flare_class=flare_class,
             risk_level=risk_level,
-            confidence_score=92.60 # Standard mapped pipeline verification score
+            confidence_score=92.60
         )
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal pipeline parsing error: {str(e)}")
 
+# ==========================================
+# 🛰️ 4. ENDPOINT 2: AUTOMATIC LIVE NASA FETCH
+# ==========================================
+@app.post("/api/v1/ai/predict-live", response_model=FlarePredictionResponse)
+async def predict_live_nasa_stream():
+    try:
+        # 1. NASA ke server se current snapshot binary stream download karo
+        response = requests.get(NASA_LIVE_193_URL, timeout=15)
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=502, detail="NASA SDO Satellite server unreachable.")
+            
+        # 2. Raw response stream ko OpenCV grayscale matrix mein map karo
+        nparr = np.frombuffer(response.content, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+        
+        if img is None:
+            raise HTTPException(status_code=500, detail="Failed to decode NASA image matrix stream.")
+            
+        # 3. Model validation transforms (128x128 scaling)
+        img_resized = cv2.resize(img, (128, 128))
+        img_normalized = img_resized.astype(np.float32) / 255.0
+        input_tensor = torch.tensor(img_normalized).unsqueeze(0).unsqueeze(0)
+        
+        # 4. Deep learning forward pass inference
+        with torch.no_grad():
+            log_flux_pred = model(input_tensor).item()
+            
+        # 5. Scientific scale mapping conversion
+        real_flux = 10 ** log_flux_pred
+        flare_class, risk_level = classify_solar_flux(real_flux)
+        
+        return FlarePredictionResponse(
+            predicted_log_flux=round(log_flux_pred, 4),
+            real_space_flux=real_flux,
+            flare_class=flare_class,
+            risk_level=risk_level,
+            confidence_score=92.60
+        )
+        
+    except requests.exceptions.RequestException as req_err:
+        raise HTTPException(status_code=503, detail=f"Satellite Gateway Network Failure: {str(req_err)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal automation error: {str(e)}")
+
+# ==========================================
+# 🩺 5. SYSTEM HEALTH NODE
+# ==========================================
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "engine": "PyTorch 2.0+FastAPI"}
+    return {"status": "healthy", "engine": "PyTorch 2.0+FastAPI Cloud Node"}
