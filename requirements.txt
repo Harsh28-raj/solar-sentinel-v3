@@ -5,3 +5,4 @@ numpy
 opencv-python-headless
 pydantic
 python-multipart
+requests
