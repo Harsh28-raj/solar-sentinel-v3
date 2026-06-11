@@ -4,25 +4,27 @@ import torch
 import torch.nn as nn
 import numpy as np
 import cv2
-import requests
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 app = FastAPI(
-    title="SolarSentinel AI Inference Engine",
-    description="Production API for Solar Flare Regression, Real-Time Satellite Fetching, and Risk Profiling",
-    version="1.0.0"
+    title="SolarSentinel AI Engine",
+    description="Production API for Solar Flare Regression and Risk Profiling",
+    version="2.0.0"
 )
 
-# Multi-Node Satellite Network Base (Primary NASA Node, Stanford Global Mirror, and Stable Fallback Node)
-NASA_MIRRORS = [
-    "https://sdo.gsfc.nasa.gov/data/assets/img/latest/latest_1024_0193.jpg",
-    "http://jsoc.stanford.edu/data/aia/images/latest_1024_0193.jpg",
-    "https://raw.githubusercontent.com/Harsh28-raj/solar-sentinel-v3/main/2012-07-25T190847__171.jpg"
-]
+# 🌐 CORS Middleware: Iske bina frontend tumhare backend ko access nahi kar payega
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Production mein yahan frontend ka actual URL dal sakte ho
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ==========================================
-# 🧠 1. CNN MODEL ARCHITECTURE RE-DEFINITION
+# 🧠 1. CNN MODEL ARCHITECTURE
 # ==========================================
 class SolarSentinelCNN(nn.Module):
     def __init__(self):
@@ -53,19 +55,19 @@ class SolarSentinelCNN(nn.Module):
         x = self.dropout(self.act4(self.fc1(x)))
         return self.fc_out(x).squeeze(-1)
 
-# Initialize and load weights safely on CPU for hosting environments
+# Model weights load karne ka section
 MODEL_PATH = "solar_sentinel_cnn.pth"
 model = SolarSentinelCNN()
 
 if os.path.exists(MODEL_PATH):
     model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device('cpu')))
     model.eval()
-    print("✅ Production weights binary successfully loaded into server memory!")
+    print("✅ AI Engine successfully loaded into memory!")
 else:
-    print(f"⚠️ Warning: {MODEL_PATH} not found. Running API in uninitialized state.")
+    print(f"⚠️ Warning: {MODEL_PATH} not found.")
 
 # ==========================================
-# 📦 2. RESPONSE SCHEMA DEF
+# 📦 2. SCHEMAS & HELPERS
 # ==========================================
 class FlarePredictionResponse(BaseModel):
     predicted_log_flux: float
@@ -84,12 +86,12 @@ def classify_solar_flux(flux_val):
     return "B-Class or Below (Safe)", "LOW"
 
 # ==========================================
-# 🚀 3. ENDPOINT 1: MANUAL FILE UPLOAD
+# 🚀 3. SINGLE DEPENDABLE ENDPOINT (Frontend isi par file bhejega)
 # ==========================================
 @app.post("/api/v1/ai/flare-prediction", response_model=FlarePredictionResponse)
 async def predict_flare(file: UploadFile = File(...)):
     if not file.filename.lower().endswith(('.jpg', '.jpeg', '.png')):
-        raise HTTPException(status_code=400, detail="Invalid image extension. Submissions must be raster nodes.")
+        raise HTTPException(status_code=400, detail="Invalid image format.")
     
     try:
         contents = await file.read()
@@ -97,8 +99,9 @@ async def predict_flare(file: UploadFile = File(...)):
         img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
         
         if img is None:
-            raise HTTPException(status_code=400, detail="Corrupted image matrix byte arrays stream.")
+            raise HTTPException(status_code=400, detail="Corrupted image matrix stream.")
             
+        # AI Preprocessing (128x128) & Inference
         img_resized = cv2.resize(img, (128, 128))
         img_normalized = img_resized.astype(np.float32) / 255.0
         input_tensor = torch.tensor(img_normalized).unsqueeze(0).unsqueeze(0)
@@ -118,71 +121,14 @@ async def predict_flare(file: UploadFile = File(...)):
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal pipeline parsing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
 
-# ==========================================
-# 🛰️ 4. ENDPOINT 2: AUTOMATIC LIVE NASA FETCH
-# ==========================================
-@app.post("/api/v1/ai/predict-live", response_model=FlarePredictionResponse)
-async def predict_live_nasa_stream():
-    response = None
-    successful_url = None
-    
-    # Fault-tolerant network loop over satellite mirrors
-    for url in NASA_MIRRORS:
-        try:
-            res = requests.get(url, timeout=8)
-            if res.status_code == 200:
-                response = res
-                successful_url = url
-                break
-        except Exception:
-            continue
-            
-    if response is None:
-        raise HTTPException(
-            status_code=502, 
-            detail="All NASA Satellite primary links and global storage mirrors are currently experiencing downtime or blocking cloud IPs."
-        )
-        
-    try:
-        nparr = np.frombuffer(response.content, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
-        
-        if img is None:
-            raise HTTPException(status_code=500, detail="Failed to decode fetched mirror matrix stream.")
-            
-        img_resized = cv2.resize(img, (128, 128))
-        img_normalized = img_resized.astype(np.float32) / 255.0
-        input_tensor = torch.tensor(img_normalized).unsqueeze(0).unsqueeze(0)
-        
-        with torch.no_grad():
-            log_flux_pred = model(input_tensor).item()
-            
-        real_flux = 10 ** log_flux_pred
-        flare_class, risk_level = classify_solar_flux(real_flux)
-        
-        return FlarePredictionResponse(
-            predicted_log_flux=round(log_flux_pred, 4),
-            real_space_flux=real_flux,
-            flare_class=flare_class,
-            risk_level=risk_level,
-            confidence_score=92.60
-        )
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal automation parsing error: {str(e)}")
-
-# ==========================================
-# 🩺 5. SYSTEM HEALTH NODE & PORT BINDING
-# ==========================================
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "engine": "PyTorch 2.0+FastAPI Cloud Node"}
+    return {"status": "healthy", "mode": "Production Optimized"}
 
+# Dynamic Port Binding: Local par 8000 pe chalega, Render par automatic port utha lega
 if __name__ == "__main__":
     import uvicorn
-    # Dynamic Port configuration mapping for automatic deployment systems like Render
-    port = int(os.environ.get("PORT", 10000))
-    print(f"📡 Production server binding directly to environment port: {port}")
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
