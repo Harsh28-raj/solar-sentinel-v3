@@ -169,3 +169,13 @@ async def predict_live_nasa_stream():
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "engine": "PyTorch 2.0+FastAPI Cloud Node"}
+
+
+# Yeh 'main.py' ke ekdum last mein paste karna hai:
+if __name__ == "__main__":
+    import uvicorn
+    # Render automatic 'PORT' environment variable pass karta hai
+    port = int(os.environ.get("PORT", 10000))
+    print(f"📡 Production server binding directly to port: {port}")
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+
