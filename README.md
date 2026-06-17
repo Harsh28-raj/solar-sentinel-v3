@@ -1,11 +1,10 @@
-Markdown
 <div align="center">
 
-<img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMDI3Y2g1cXBlbXF6b3p5NXpndXp5bmt0Z3p5bmt0Z3p5bmt0Z3p5bSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7qE1YN7aBOFPRw8E/giphy.gif" width="100%" height="250px" style="object-fit: cover; border-radius: 10px;" alt="Solar Sentinel Banner">
+<img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Zpajg2dzdyMms0MGx6ZzBndm56NmxmNXU5cWZ1NmN4bTdtOHlqMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0IykG0AM7911MrCM/giphy.gif" width="100%" height="280px" style="object-fit: cover; border-radius: 12px; border: 2px solid #ff4500;" alt="Solar Sentinel Plasma Banner">
 
-# 🌌 SolarSentinel AI (v3)
+# 🛰️ SolarSentinel AI (v3)
 
-### 🛰️ An Advanced Space-Weather Intelligence Engine for Planetary Infrastructure Defense
+### An Advanced Space-Weather Intelligence Engine for Planetary Infrastructure Defense
 
 <br>
 
@@ -16,8 +15,8 @@ Markdown
 
 <br>
 
-> **⚡ Early Warning System:** Processing real-time NASA satellite intelligence to shield global grids from cosmic anomalies.
-> Developed by **Harsh Raj** — 2nd Year CS Student | AI/ML Developer (MLCOE)
+> **⚡ Planetary Defense Alert:** Monitoring dynamic solar plasma streams and coronal fields via direct NASA telemetry arrays to safeguard Earth's electronic infrastructure.
+> Built by **Harsh Raj** — 2nd Year CS Student | AI/ML Developer (MLCOE)
 
 ---
 
@@ -38,7 +37,7 @@ The Sun constantly emits cosmic radiation, but sudden **Solar Flares** and **Hel
 ## 🚀 Core Features & Architecture
 
 <details open>
-<summary><b>🌪️ Module 1: Heliostorm Deep-Space Tracker (Click to collapse)</b></summary>
+<summary><b>🌪️ Module 1: Heliostorm Deep-Space Tracker</b></summary>
 <br>
 Processes dynamic deep-space streaming metrics to identify rapid shifts in solar wind density and interplanetary magnetic fields.
 <ul>
@@ -50,7 +49,7 @@ Processes dynamic deep-space streaming metrics to identify rapid shifts in solar
 <br>
 
 <details open>
-<summary><b>🎯 Module 2: Solar Flare Prediction & Spatial Localization (Click to collapse)</b></summary>
+<summary><b>🎯 Module 2: Solar Flare Prediction & Spatial Localization</b></summary>
 <br>
 A custom Computer Vision pipeline that reads live solar imagery (NASA SOHO/SDO streams) to instantly classify threat thresholds and locate active regions.
 <ul>
@@ -64,7 +63,7 @@ A custom Computer Vision pipeline that reads live solar imagery (NASA SOHO/SDO s
 ## 📡 Live Deployments & Dynamic Endpoints
 
 <div align="center">
-  
+
 | Service | Status | URL / Link |
 | :--- | :---: | :--- |
 | **Frontend Dashboard** | `🟢 Live` | [http://localhost:5173/globe-risk](http://localhost:5173/globe-risk) |
@@ -77,31 +76,14 @@ A custom Computer Vision pipeline that reads live solar imagery (NASA SOHO/SDO s
 
 ```bash
 # 1. Predict Live NASA Stream
-# Processes the current real-time satellite imagery buffer to generate active structural threat scoring.
 POST /api/v1/ai/predict-live
 
 # 2. Anomaly Spatial Localization
-# Returns exact flare pixel matrix coordinates to draw the dynamic blinking targeting layer.
 POST /api/v1/ai/flare-prediction
-🗂️ Project Repository Structure
-Markdown
-solar-sentinel-v3/
+🗂️ Project Repository StructureCode snippetsolar-sentinel-v3/
 │
 ├── main.py                  # Core FastAPI App & CORS Pipeline Control
 ├── requirements.txt         # Production Ready Python Dependencies
 ├── solar_sentinel_cnn.pth   # Pre-trained CV weights for localization
-└── [Frontend/React Assets]  # Dynamic Digital Sun Matrix & Globe Risk Mapping
-⚙️ Tech Stack
-🛡️ Target Audience
-🏦 Power Grid Operators: Automates immediate multi-hour isolation protocols to prevent grid burnout.
-
-🛰️ Aerospace & Satellite Agencies (ISRO, SpaceX): Protects active orbital constellation sensors from irreversible ionization.
-
-✈️ Telecom & Aviation Sectors: Minimizes critical navigation routing failures during high-frequency radio blackouts.
-
-👨‍💻 Author
-Harsh Raj — @Harsh28-raj
-
-2nd Year CS Student | AI/ML Developer
-
-Machine Learning Centre of Excellence (MLCOE)
+└── Frontend_React_Assets/   # Dynamic Digital Sun Matrix & Globe Risk Mapping
+⚙️ Tech StackLayerTechnologiesFrontend UIReact.js, Tailwind CSS, Lucide Icons, HTML5 Canvas AnimationsBackend FrameworkFastAPI (Python 3.10+), Uvicorn Asynchronous ServerDeep Learning & CVPyTorch, OpenCV (opencv-python-headless)Data & StreamingNumPy, Pydantic, HTTPX (Asynchronous Stream Fetching)🛡️ Target Audience🏦 Power Grid Operators: Automates immediate multi-hour isolation protocols to prevent grid burnout.🛰️ Aerospace & Satellite Agencies (ISRO, SpaceX): Protects active orbital constellation sensors from irreversible ionization.✈️ Telecom & Aviation Sectors: Minimizes critical navigation routing failures during high-frequency radio blackouts.👨‍💻 AuthorHarsh Raj — @Harsh28-raj2nd Year CS Student | AI/ML DeveloperMachine Learning Centre of Excellence (MLCOE)
