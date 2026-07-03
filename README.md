@@ -195,7 +195,7 @@ That's the difference between a disruption and a disaster.
 ## 👨‍💻 Author
 
 **Harsh Raj** — [@Harsh28-raj](https://github.com/Harsh28-raj)
-AI/ML Engineer · B.Tech CSE (AI/ML) · AKGEC, 2027
+AI/ML Engineer · B.Tech CSE (AI/ML) · AKGEC, 2028
 Machine Learning Centre of Excellence (MLCOE)
 
 ---
